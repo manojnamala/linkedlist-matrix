@@ -1,88 +1,90 @@
 #include <iostream>
 using namespace std;
 
-// Node structure for linked list
+// Node representing a non-zero matrix element
 struct Node {
-    int row, col, value;
+    int row;
+    int col;
+    int value;
     Node* next;
-    Node(int r, int c, int v) : row(r), col(c), value(v), next(nullptr) {}
 };
 
+// SparseMatrix class using sorted linked list 
 class SparseMatrix {
-private:
     int rows, cols;
     Node* head;
 
 public:
-    // Constructor
-    SparseMatrix(int r, int c) {
-        rows = r;
-        cols = c;
-        head = nullptr;
+    SparseMatrix(int r, int c) : rows(r), cols(c), head(nullptr) {}
+
+    ~SparseMatrix() {
+        while (head != nullptr) {
+            Node* tmp = head;
+            head = head->next;
+            delete tmp;
+        }
     }
 
-    // Insert non-zero element into linked list
-    void insert(int r, int c, int v) {
-        if (v == 0) return; // Skip zero values
-        Node* newNode = new Node(r, c, v);
+    // Insert maintaining sorted order by (row, col)
+    void insert(int r, int c, int val) {
+        if (val == 0) return; // skip zero values
 
-        if (head == nullptr) {
+        Node* newNode = new Node{r, c, val, nullptr};
+
+        // Insert at head if needed
+        if (!head || (r < head->row) || (r == head->row && c < head->col)) {
+            newNode->next = head;
             head = newNode;
-        } else {
-            Node* temp = head;
-            while (temp->next != nullptr) {
-                temp = temp->next;
-            }
-            temp->next = newNode;
+            return;
         }
+
+        // Find correct position
+        Node* current = head;
+        while (current->next != nullptr && 
+               (current->next->row < r || 
+               (current->next->row == r && current->next->col < c))) {
+            current = current->next;
+        }
+
+        newNode->next = current->next;
+        current->next = newNode;
     }
 
-    // Display sparse matrix in triplet form
-    void displayTriplet() {
-        cout << "Row\tCol\tValue\n";
-        Node* temp = head;
-        while (temp != nullptr) {
-            cout << temp->row << "\t" << temp->col << "\t" << temp->value << endl;
-            temp = temp->next;
-        }
-    }
-
-    // Display full matrix
-    void displayFull() {
-        Node* temp = head;
+    // Display full matrix including zeros
+    void display() const {
+        Node* current = head;
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                if (temp != nullptr && temp->row == i && temp->col == j) {
-                    cout << temp->value << " ";
-                    temp = temp->next;
+                if (current && current->row == i && current->col == j) {
+                    cout << current->value << " ";
+                    current = current->next;
                 } else {
                     cout << "0 ";
                 }
             }
-            cout << endl;
+            cout << "\n";
         }
     }
 };
 
 int main() {
-    int rows, cols, numNonZero;
-    cout << "Enter number of rows, cols, and non-zero elements: ";
-    cin >> rows >> cols >> numNonZero;
+    int rows, cols, nonZeroCount;
+    cout << "Enter matrix dimensions (rows cols): ";
+    cin >> rows >> cols;
+    cout << "Enter number of non-zero elements: ";
+    cin >> nonZeroCount;
 
     SparseMatrix sm(rows, cols);
 
-    cout << "Enter row, column, and value for " << numNonZero << " non-zero elements:\n";
-    for (int i = 0; i < numNonZero; i++) {
-        int r, c, v;
-        cin >> r >> c >> v;
-        sm.insert(r, c, v);
+    cout << "Enter row, column, and value of non-zero elements:\n";
+    for (int i = 0; i < nonZeroCount; i++) {
+        int r, c, val;
+        cin >> r >> c >> val;
+        sm.insert(r, c, val);
     }
 
-    cout << "\nSparse Matrix (Triplet Form):\n";
-    sm.displayTriplet();
-
-    cout << "\nFull Matrix Representation:\n";
-    sm.displayFull();
+    cout << "\nSparse Matrix representation:\n";
+    sm.display();
 
     return 0;
 }
